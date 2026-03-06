@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasil Drenado — O que sai do país todo dia</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --red: #e63027;
+    --amber: #f5a623;
+    --green: #00a651;
+    --blue: #009cf4;
+    --text: #e8e0d0;
+    --muted: #666;
+    --border: #2a2a2a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.1em;
+    color: var(--red);
+  }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(230,48,39,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 12vw, 12rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-title span { color: var(--red); }
+  .hero-sub {
+    max-width: 600px;
+    margin-top: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: #aaa;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  /* REALTIME COUNTER */
+  .counter-section {
+    background: var(--red);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .counter-section::before {
+    content: 'SAINDO AGORA';
+    position: absolute;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20vw;
+    color: rgba(255,255,255,0.04);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .counter-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 0.75rem;
+  }
+  .counter-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 7rem);
+    letter-spacing: 0.05em;
+    color: #fff;
+    line-height: 1;
+  }
+  .counter-sub {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 0.75rem;
+    font-style: italic;
+  }
+  .counter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2px;
+    margin-top: 2px;
+    background: rgba(0,0,0,0.2);
+  }
+  .counter-item {
+    background: rgba(0,0,0,0.15);
+    padding: 2rem;
+    text-align: center;
+  }
+  .counter-item .val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: #fff;
+    display: block;
+  }
+  .counter-item .lbl {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  /* SECTION DEFAULTS */
+  section {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--amber);
+  }
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.5rem;
+  }
+  .lead {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #bbb;
+    max-width: 700px;
+  }
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* CARDS */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin-top: 3rem;
+    border: 1px solid var(--border);
+  }
+  .card {
+    background: var(--bg2);
+    padding: 2rem;
+    transition: background 0.2s;
+  }
+  .card:hover { background: var(--bg3); }
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .card-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .card-num.amber { color: var(--amber); }
+  .card-num.blue { color: var(--blue); }
+  .card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+  .card-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .card-source {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: #444;
+    margin-top: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* CHART CONTAINERS */
+  .chart-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    margin-top: 2rem;
+    position: relative;
+  }
+  .chart-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1.5rem;
+  }
+  canvas { max-width: 100%; }
+
+  /* MAP SECTION */
+  .map-section {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 4rem 2rem;
+  }
+  .map-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .world-map-container {
+    position: relative;
+    margin-top: 3rem;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    padding: 2rem;
+    overflow: hidden;
+  }
+  #worldMap {
+    width: 100%;
+    height: auto;
+  }
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* COMPARISON SECTION */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .comparison-item {
+    border-left: 3px solid var(--amber);
+    padding-left: 1.5rem;
+  }
+  .comparison-item .emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+  .comparison-item .val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--amber);
+    display: block;
+    line-height: 1;
+  }
+  .comparison-item .desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    line-height: 1.5;
+  }
+
+  /* TIMELINE BAR */
+  .timeline {
+    margin-top: 3rem;
+  }
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .timeline-year {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .timeline-bar-wrap {
+    height: 24px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .timeline-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), #ff6b6b);
+    transition: width 1s ease;
+    border-radius: 2px;
+  }
+  .timeline-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    text-align: right;
+  }
+
+  /* BIG NUMBER CALLOUT */
+  .big-callout {
+    background: linear-gradient(135deg, #1a0a0a, #0a0a0a);
+    border: 1px solid #3a1a1a;
+    padding: 4rem 2rem;
+    text-align: center;
+    margin: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .big-callout::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(230,48,39,0.05) 0%, transparent 70%);
+  }
+  .big-callout-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 14vw, 14rem);
+    color: var(--red);
+    line-height: 1;
+    opacity: 0.9;
+  }
+  .big-callout-text {
+    font-size: 1rem;
+    color: #888;
+    max-width: 500px;
+    margin: 0.5rem auto 0;
+    line-height: 1.7;
+  }
+
+  /* FUGA DE CÉREBROS */
+  .brain-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+  .brain-item {
+    background: var(--bg2);
+    padding: 2rem;
+  }
+  .brain-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    color: var(--blue);
+    line-height: 1;
+  }
+  .brain-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    line-height: 1.5;
+  }
+  @media (max-width: 600px) {
+    .brain-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .timeline-item { grid-template-columns: 60px 1fr 100px; }
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  footer p {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  footer .sources {
+    margin-top: 1.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: #444;
+    text-align: left;
+    max-width: 800px;
+    margin: 1.5rem auto 0;
+  }
+  footer .sources li {
+    padding: 0.25rem 0;
+    list-style: none;
+  }
+  footer .sources li::before { content: '→ '; color: var(--red); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* PULSE */
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .pulse { animation: pulse-red 2s ease infinite; }
+
+  /* SCROLL LINE */
+  .scroll-line {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--red);
+    z-index: 200;
+    transition: width 0.1s;
+  }
+
+  /* TAG */
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid currentColor;
+    margin-bottom: 0.5rem;
+  }
+  .tag.red { color: var(--red); }
+  .tag.amber { color: var(--amber); }
+  .tag.blue { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="scroll-line" id="scrollLine"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🇧🇷 Brasil Drenado</div>
+  <ul class="nav-links">
+    <li><a href="#lucros">Lucros</a></li>
+    <li><a href="#divida">Dívida</a></li>
+    <li><a href="#capitais">Capitais</a></li>
+    <li><a href="#cerebros">Cérebros</a></li>
+    <li><a href="#mapa">Mapa</a></li>
+    <li><a href="#comparacoes">Comparações</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">⬛ Relatório de dependência econômica — Brasil, 2024–2025</div>
+  <h1 class="hero-title">BRASIL<br><span>DRENADO</span></h1>
+  <p class="hero-sub">
+    Enquanto você lê isso, dinheiro sai do Brasil. Em lucros de multinacionais, juros da dívida, 
+    paraísos fiscais e cérebros que emigraram. Este site reúne os dados oficiais para mostrar 
+    um problema real: a <strong>dependência econômica</strong> do Brasil.
+  </p>
+</div>
+
+<!-- COUNTER SECTION -->
+<div class="counter-section">
+  <div class="counter-label pulse">⬤ SAINDO DO BRASIL EM TEMPO REAL (ESTIMATIVA)</div>
+  <div class="counter-value" id="mainCounter">R$ 0</div>
+  <div class="counter-sub">desde que você abriu esta página · baseado nos dados de 2024 do Banco Central</div>
+  <div class="counter-grid" style="margin-top:2rem">
+    <div class="counter-item">
+      <span class="val" id="c1">R$ 0</span>
+      <span class="lbl">Juros da dívida pública</span>
+    </div>
+    <div class="counter-item">
+      <span class="val" id="c2">R$ 0</span>
+      <span class="lbl">Lucros/dividendos ao exterior</span>
+    </div>
+    <div class="counter-item">
+      <span class="val" id="c3">R$ 0</span>
+      <span class="lbl">Paraísos fiscais (estimativa mín.)</span>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1 — LUCROS E DIVIDENDOS -->
+<section id="lucros">
+  <div class="section-label">01 — Lucros e Dividendos</div>
+  <h2>EMPRESAS ESTRANGEIRAS<br>LEVAM O LUCRO</h2>
+  <p class="lead">
+    Toda vez que uma multinacional opera no Brasil, parte do lucro vai para fora. 
+    Em 2024, foram <strong style="color:var(--red)">US$ 45,5 bilhões</strong> em remessas de 
+    lucros e dividendos ao exterior — alta de 18% em relação ao ano anterior.
+  </p>
+
+  <div class="cards reveal">
+    <div class="card">
+      <span class="card-icon">💸</span>
+      <div class="card-num">US$ 45,5 bi</div>
+      <div class="card-title">Remessa de Lucros e Dividendos</div>
+      <div class="card-desc">Valor que saiu do Brasil em 2024 como lucro de empresas estrangeiras que operam aqui. É o maior da história recente.</div>
+      <div class="card-source">Fonte: Banco Central do Brasil, jan/2025</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">📈</span>
+      <div class="card-num amber">+18%</div>
+      <div class="card-title">Crescimento em um ano</div>
+      <div class="card-desc">Em 2023, foram US$ 37,4 bilhões. Em 2024, US$ 45,5 bilhões. As remessas crescem mais rápido que os salários.</div>
+      <div class="card-source">Fonte: Ouribank / Banco Central, 2025</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🏦</span>
+      <div class="card-num blue">US$ 30,3 bi</div>
+      <div class="card-title">Juros Externos da Dívida</div>
+      <div class="card-desc">Além dos lucros, o Brasil pagou US$ 30,3 bilhões em juros para credores externos em 2024.</div>
+      <div class="card-source">Fonte: Banco Central do Brasil, 2025</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">⚖️</span>
+      <div class="card-num">R$ 1 tri</div>
+      <div class="card-title">Milionários Brasileiros no Exterior</div>
+      <div class="card-desc">O Banco Central estima que milionários brasileiros têm R$ 1 trilhão aplicado no exterior em fundos e offshore.</div>
+      <div class="card-source">Fonte: Banco Central / Sintrajufe, 2024</div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal">
+    <div class="chart-title">▸ Remessa de lucros e dividendos ao exterior (US$ bilhões)</div>
+    <canvas id="chartLucros" height="100"></canvas>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 2 — DÍVIDA PÚBLICA -->
+<section id="divida">
+  <div class="section-label">02 — Dívida Pública</div>
+  <h2>O PAÍS QUE MAIS PAGA<br>JUROS DO MUNDO</h2>
+  <p class="lead">
+    Em 2024, o Brasil pagou <strong style="color:var(--red)">R$ 950,4 bilhões</strong> só em 
+    juros da dívida pública — 8,05% do PIB. Entre 153 países analisados pelo FMI, 
+    o Brasil é o <strong style="color:var(--red)">número 1 em gasto com juros</strong>.
+  </p>
+
+  <div class="big-callout reveal">
+    <div class="big-callout-num">8,28%</div>
+    <div class="big-callout-text">
+      Do PIB brasileiro foi para pagar juros da dívida em 2024. 
+      Mais que o Sri Lanka (7,8%), Paquistão (7,7%) e qualquer outro país do planeta.
+      <br><em style="color:#555; font-size:0.85rem">Fonte: FMI — Base de Dados das Finanças Públicas, 2024</em>
+    </div>
+  </div>
+
+  <div class="timeline reveal">
+    <div class="section-label" style="margin-bottom:1rem">Pagamento anual de juros da dívida pública (R$ bilhões, valores nominais)</div>
+    <div class="timeline-item">
+      <div class="timeline-year">2019</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:45%"></div></div>
+      <div class="timeline-val">R$ 410 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2020</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:42%"></div></div>
+      <div class="timeline-val">R$ 380 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2021</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:55%"></div></div>
+      <div class="timeline-val">R$ 500 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2022</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:60%"></div></div>
+      <div class="timeline-val">R$ 587 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2023</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:72%"></div></div>
+      <div class="timeline-val">R$ 746 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2024</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:100%; background: linear-gradient(90deg, var(--red), #ff0000)"></div></div>
+      <div class="timeline-val" style="color:var(--red)">R$ 950 bi</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2025*</div>
+      <div class="timeline-bar-wrap"><div class="timeline-bar" style="width:98%; background: linear-gradient(90deg, #aa0000, var(--red))"></div></div>
+      <div class="timeline-val" style="color:var(--red)">R$ 891 bi</div>
+    </div>
+  </div>
+  <p style="font-size:0.7rem; color:var(--muted); margin-top:1rem; font-style:italic">*2025 = dado parcial. Fonte: Banco Central / Poder360 / Esquerda Diário</p>
+
+  <div class="cards reveal" style="margin-top:3rem">
+    <div class="card">
+      <span class="card-icon">🏛️</span>
+      <div class="card-num">R$ 9,6 tri</div>
+      <div class="card-title">Dívida Pública Federal Total</div>
+      <div class="card-desc">Valor da dívida em dez/2025. Cresceu R$ 1 trilhão em um ano — não por gastos, mas pelos próprios juros compostos.</div>
+      <div class="card-source">Fonte: Esquerda Diário / Tesouro Nacional, jan/2026</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🏦</span>
+      <div class="card-num amber">33%</div>
+      <div class="card-title">Bancos como Credores</div>
+      <div class="card-desc">Instituições financeiras são os maiores detentores da dívida pública. Quem mais lucra com os juros são os bancos.</div>
+      <div class="card-source">Fonte: Esquerda Diário, 2026</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">✂️</span>
+      <div class="card-num blue">R$ 71,9 bi</div>
+      <div class="card-title">Corte de Gastos Aprovado</div>
+      <div class="card-desc">O pacote fiscal de Lula corta R$ 71,9 bilhões em saúde, educação e serviços públicos — enquanto paga R$ 950 bi em juros.</div>
+      <div class="card-source">Fonte: Economics / BC, 2024</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAPA -->
+<div class="map-section" id="mapa">
+  <div class="map-inner">
+    <div class="section-label">03 — Para onde vai?</div>
+    <h2>DESTINOS DA<br>RIQUEZA BRASILEIRA</h2>
+    <p class="lead">
+      O dinheiro que sai do Brasil vai principalmente para paraísos fiscais e para os países onde 
+      as matrizes das multinacionais estão sediadas — EUA, Europa e centros financeiros offshore.
+    </p>
+    <div class="world-map-container reveal">
+      <svg id="worldMap" viewBox="0 0 900 450" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect width="900" height="450" fill="#0d1117"/>
+        <!-- Grid lines -->
+        <g stroke="#1a2030" stroke-width="0.5" fill="none">
+          <line x1="0" y1="225" x2="900" y2="225"/>
+          <line x1="450" y1="0" x2="450" y2="450"/>
+        </g>
+        <!-- Simplified continents -->
+        <!-- North America -->
+        <path d="M120,60 L200,55 L220,80 L240,120 L230,180 L200,200 L170,210 L150,240 L130,220 L110,200 L90,160 L100,120 Z" fill="#1a2a1a" stroke="#2a3a2a" stroke-width="0.5"/>
+        <!-- USA highlight -->
+        <path d="M130,120 L210,115 L225,135 L220,165 L200,175 L165,175 L145,165 L130,145 Z" fill="#1e3a2a" stroke="#2e5a3a" stroke-width="1"/>
+        <circle cx="178" cy="145" r="20" fill="rgba(245,166,35,0.3)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="178" y="149" text-anchor="middle" fill="var(--amber)" font-size="8" font-family="IBM Plex Mono">EUA</text>
+        <!-- Central America -->
+        <path d="M170,200 L190,210 L180,230 L160,240 L155,225 Z" fill="#1a2a1a" stroke="#2a3a2a" stroke-width="0.5"/>
+        <!-- South America -->
+        <path d="M190,220 L250,210 L290,220 L310,260 L320,320 L300,370 L270,390 L240,380 L210,350 L195,310 L185,270 Z" fill="#1a2a1a" stroke="#2a3a2a" stroke-width="0.5"/>
+        <!-- Brazil highlight -->
+        <path d="M200,250 L260,240 L290,255 L300,290 L290,330 L260,345 L230,340 L205,310 L198,280 Z" fill="#1a1a0a" stroke="var(--green)" stroke-width="2"/>
+        <circle cx="248" cy="295" r="8" fill="var(--green)" opacity="0.8"/>
+        <text x="248" y="298" text-anchor="middle" fill="#fff" font-size="7" font-weight="bold" font-family="IBM Plex Sans">BR</text>
+        <!-- Arrows from Brazil to destinations -->
+        <!-- To USA -->
+        <path d="M248,290 Q220,200 178,160" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="6,3" opacity="0.8" marker-end="url(#arrow)"/>
+        <!-- To Europe -->
+        <path d="M248,290 Q350,230 440,200" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="6,3" opacity="0.8" marker-end="url(#arrow)"/>
+        <!-- To Cayman/Caribbean -->
+        <path d="M248,290 Q220,270 195,250" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.9" marker-end="url(#arrowAmber)"/>
+        <!-- To UK -->
+        <path d="M248,290 Q330,240 400,185" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7" marker-end="url(#arrowAmber)"/>
+        <!-- Europe -->
+        <path d="M380,80 L440,70 L480,80 L490,110 L470,130 L440,140 L400,130 L380,110 Z" fill="#1a2a1a" stroke="#2a3a2a" stroke-width="0.5"/>
+        <circle cx="440" cy="110" r="18" fill="rgba(245,166,35,0.25)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="440" y="114" text-anchor="middle" fill="var(--amber)" font-size="7" font-family="IBM Plex Mono">EUROPA</text>
+        <!-- UK -->
+        <path d="M395,80 L408,75 L410,95 L397,98 Z" fill="#1e2e3a" stroke="#2e4a5a" stroke-width="0.5"/>
+        <circle cx="400" cy="87" r="8" fill="rgba(0,156,244,0.3)" stroke="var(--blue)" stroke-width="1"/>
+        <text x="400" y="90" text-anchor="middle" fill="var(--blue)" font-size="5" font-family="IBM Plex Mono">UK</text>
+        <!-- Africa -->
+        <path d="M430,160 L500,150 L540,180 L560,240 L540,300 L500,330 L460,320 L430,280 L420,220 L425,180 Z" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="0.5"/>
+        <!-- Asia -->
+        <path d="M540,60 L680,50 L740,80 L760,120 L720,160 L680,170 L620,160 L570,130 L540,100 Z" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="0.5"/>
+        <!-- Cayman Islands (small dot) -->
+        <circle cx="200" cy="230" r="5" fill="rgba(230,48,39,0.6)" stroke="var(--red)" stroke-width="1"/>
+        <text x="218" y="234" fill="#888" font-size="6" font-family="IBM Plex Mono">Cayman</text>
+        <!-- Panamá -->
+        <circle cx="185" cy="220" r="4" fill="rgba(230,48,39,0.5)" stroke="var(--red)" stroke-width="1"/>
+        <text x="165" y="218" fill="#888" font-size="6" font-family="IBM Plex Mono">Panamá</text>
+
+        <!-- Arrow markers -->
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="var(--red)"/>
+          </marker>
+          <marker id="arrowAmber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="var(--amber)"/>
+          </marker>
+        </defs>
+
+        <!-- Legend -->
+        <rect x="600" y="300" width="270" height="120" rx="4" fill="rgba(0,0,0,0.7)" stroke="#2a2a2a" stroke-width="1"/>
+        <text x="615" y="320" fill="#666" font-size="7" font-family="IBM Plex Mono" letter-spacing="1">FLUXOS DE SAÍDA</text>
+        <line x1="615" y1="335" x2="640" y2="335" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,3"/>
+        <text x="650" y="339" fill="#aaa" font-size="9" font-family="IBM Plex Sans">Lucros e juros externos</text>
+        <line x1="615" y1="355" x2="640" y2="355" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="650" y="359" fill="#aaa" font-size="9" font-family="IBM Plex Sans">Paraísos fiscais (offshore)</text>
+        <circle cx="622" cy="375" r="5" fill="var(--green)"/>
+        <text x="650" y="379" fill="#aaa" font-size="9" font-family="IBM Plex Sans">Brasil (origem)</text>
+        <circle cx="622" cy="395" r="5" fill="rgba(230,48,39,0.6)"/>
+        <text x="650" y="399" fill="#aaa" font-size="9" font-family="IBM Plex Sans">Paraísos fiscais conhecidos</text>
+      </svg>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Remessas de lucros/dividendos</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Fuga via paraísos fiscais</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Juros da dívida externa</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4 — PARAÍSOS FISCAIS -->
+<section id="capitais">
+  <div class="section-label">04 — Fuga de Capitais</div>
+  <h2>PARAÍSOS FISCAIS<br>& OFFSHORE</h2>
+  <p class="lead">
+    Super-ricos brasileiros escondem dinheiro em paraísos fiscais para não pagar impostos. 
+    A estimativa mínima da <em>Tax Justice Network</em>: 
+    <strong style="color:var(--amber)">US$ 8 bilhões por ano</strong> evadidos — 
+    o equivalente ao orçamento do Fundeb por ano.
+  </p>
+
+  <div class="cards reveal">
+    <div class="card">
+      <span class="card-icon">🏝️</span>
+      <div class="card-num amber">US$ 8 bi/ano</div>
+      <div class="card-title">Evasão via Paraísos Fiscais</div>
+      <div class="card-desc">Estimativa mínima de perda anual do Brasil por sonegação em offshore. O real pode ser muito mais alto — é o que se conseguiu rastrear.</div>
+      <div class="card-source">Fonte: Tax Justice Network / Agência Brasil, 2023</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">💰</span>
+      <div class="card-num">US$ 520 bi</div>
+      <div class="card-title">Estoque em Paraísos Fiscais</div>
+      <div class="card-desc">Levantamento da Tax Justice Network estimou que o Brasil tem US$ 520 bilhões não declarados depositados ilegalmente em paraísos fiscais.</div>
+      <div class="card-source">Fonte: Tax Justice Network / UFRGS, 2014</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🏃</span>
+      <div class="card-num blue">-18%</div>
+      <div class="card-title">Fuga de Milionários</div>
+      <div class="card-desc">Entre 2014 e 2024, o Brasil perdeu 18% dos seus milionários. Levaram US$ 8,4 bilhões em patrimônio para o exterior — EUA, Portugal, Cayman.</div>
+      <div class="card-source">Fonte: Mundo Libertário, jan/2026</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔍</span>
+      <div class="card-num amber">3%</div>
+      <div class="card-title">O que Pagam de IR</div>
+      <div class="card-desc">Empresários como os donos da JBS pagam apenas 3% de imposto de renda sobre lucros bilionários — e ainda remetem lucros ao exterior sem tributação.</div>
+      <div class="card-source">Fonte: Sintrajufe / Banco Central, 2024</div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal">
+    <div class="chart-title">▸ Comparativo: o que R$ 40 bi/ano significam vs. orçamentos públicos</div>
+    <canvas id="chartComparativo" height="120"></canvas>
+  </div>
+</section>
+
+<!-- SECTION 5 — TERMOS DE TROCA -->
+<section>
+  <div class="section-label">05 — Termos de Troca</div>
+  <h2>EXPORTA BARATO,<br>IMPORTA CARO</h2>
+  <p class="lead">
+    O Brasil exporta commodities — soja, minério, petróleo — a preços ditados pelo mercado global. 
+    E importa produtos industrializados, tecnologia e medicamentos a preços altos. 
+    Esse desequilíbrio estrutural é o coração da dependência econômica.
+  </p>
+
+  <div class="cards reveal">
+    <div class="card">
+      <span class="card-icon">🌱</span>
+      <div class="card-num">US$ 350 bi</div>
+      <div class="card-title">Exportações em 2025</div>
+      <div class="card-desc">O Brasil exportou US$ 350 bilhões em bens em 2025 — mas 70%+ são commodities com baixo valor agregado: soja, milho, petróleo, carne.</div>
+      <div class="card-source">Fonte: Banco Central / Agência Brasil, jan/2026</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🏭</span>
+      <div class="card-num amber">US$ 290 bi</div>
+      <div class="card-title">Importações em 2025</div>
+      <div class="card-desc">Importações somaram US$ 290 bilhões, com alta de 6,2% — em sua maioria produtos industrializados, tecnologia e insumos que o Brasil não produz.</div>
+      <div class="card-source">Fonte: Banco Central / Agência Brasil, jan/2026</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">📉</span>
+      <div class="card-num blue">-US$ 52 bi</div>
+      <div class="card-title">Déficit em Serviços</div>
+      <div class="card-desc">Em serviços (tecnologia, transporte, fretes, patentes), o Brasil tem déficit de US$ 52 bilhões em 2025 — dependência de tecnologia estrangeira.</div>
+      <div class="card-source">Fonte: Banco Central / Agência Brasil, jan/2026</div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal">
+    <div class="chart-title">▸ Estrutura das exportações brasileiras: commodities vs. industrializados</div>
+    <canvas id="chartExportacoes" height="100"></canvas>
+  </div>
+</section>
+
+<!-- SECTION 6 — FUGA DE CÉREBROS -->
+<section id="cerebros">
+  <div class="section-label">06 — Fuga de Cérebros</div>
+  <h2>O TALENTO QUE<br>PARTE SEM VOLTA</h2>
+  <p class="lead">
+    O Brasil investe bilhões em educação pública para formar engenheiros, médicos e cientistas. 
+    Mas sem infraestrutura, sem salários competitivos e sem financiamento à pesquisa, 
+    esse talento emigra — e o retorno do investimento fica com outros países.
+  </p>
+
+  <div class="brain-grid reveal">
+    <div class="brain-item">
+      <div class="brain-num">+30%</div>
+      <div class="brain-label">Aumento de brasileiros com doutorado emigrando entre 2010–2020, segundo a OCDE</div>
+    </div>
+    <div class="brain-item">
+      <div class="brain-num" style="color:var(--amber)">~500k</div>
+      <div class="brain-label">Estimativa de profissionais altamente qualificados vivendo fora do Brasil (IBGE / pesquisadores)</div>
+    </div>
+    <div class="brain-item">
+      <div class="brain-num" style="color:var(--red)">R$ 200k+</div>
+      <div class="brain-label">Custo médio estimado de formar um médico ou engenheiro em universidade pública brasileira</div>
+    </div>
+    <div class="brain-item">
+      <div class="brain-num" style="color:var(--blue)">0,6% do PIB</div>
+      <div class="brain-label">Investimento do Brasil em pesquisa e desenvolvimento — abaixo de EUA (3,5%), Alemanha (3,1%) e Coreia (4,5%)</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARAÇÕES -->
+<section id="comparacoes">
+  <div class="section-label">07 — Para contextualizar</div>
+  <h2>COM ESSE DINHEIRO<br>SERIA POSSÍVEL...</h2>
+  <p class="lead">
+    Às vezes bilhões e trilhões parecem números abstratos. Aqui estão comparações concretas 
+    para entender o que se perde todo ano.
+  </p>
+
+  <div class="comparison-grid reveal">
+    <div class="comparison-item">
+      <span class="emoji">🏫</span>
+      <span class="val">~1 milhão</span>
+      <div class="desc">de escolas básicas construídas com o que se pagou em juros da dívida em 2024 (R$ 950 bi)</div>
+    </div>
+    <div class="comparison-item">
+      <span class="emoji">💊</span>
+      <span class="val">6x o SUS</span>
+      <div class="desc">O pagamento anual de juros equivale a 6 vezes o orçamento total do SUS (Sistema Único de Saúde)</div>
+    </div>
+    <div class="comparison-item">
+      <span class="emoji">🎓</span>
+      <span class="val">100% do Fundeb</span>
+      <div class="desc">Os R$ 40 bilhões perdidos em paraísos fiscais equivalem ao orçamento completo do Fundeb (educação básica)</div>
+    </div>
+    <div class="comparison-item">
+      <span class="emoji">🏠</span>
+      <span class="val">2,3 mi de casas</span>
+      <div class="desc">Unidades habitacionais do Minha Casa Minha Vida que dariam para construir com as remessas de lucros de 2024</div>
+    </div>
+    <div class="comparison-item">
+      <span class="emoji">🌍</span>
+      <span class="val">2x o PIB da Bolívia</span>
+      <div class="desc">O pagamento anual de juros da dívida é maior que toda a economia da Bolívia</div>
+    </div>
+    <div class="comparison-item">
+      <span class="emoji">💉</span>
+      <span class="val">300 mi vacinas</span>
+      <div class="desc">Doses de vacina que o Ministério da Saúde poderia comprar com o dinheiro que vai para lucros estrangeiros em um ano</div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal" style="margin-top:3rem">
+    <div class="chart-title">▸ Total estimado de saída de riqueza por categoria em 2024 (R$ bilhões)</div>
+    <canvas id="chartTotal" height="120"></canvas>
+  </div>
+</section>
+
+<!-- CONCLUSÃO -->
+<div style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 4rem 2rem; text-align:center;">
+  <div style="max-width:700px; margin:0 auto;">
+    <div class="section-label" style="justify-content:center">O que esses dados mostram</div>
+    <h2 style="font-size: clamp(2rem,4vw,4rem); margin-bottom:1.5rem">DEPENDÊNCIA É UM<br>PROBLEMA ESTRUTURAL</h2>
+    <p style="font-size:1rem; line-height:1.8; color:#aaa;">
+      Esses números não são acidente. São resultado de décadas de política econômica que 
+      subordina o Brasil ao capital externo — via abertura financeira, juros altos, 
+      desindustrialização e tratados comerciais assimétricos. 
+      Entender a dependência é o primeiro passo para superá-la.
+    </p>
+    <div style="margin-top:2rem; font-family:'IBM Plex Mono', monospace; font-size:0.7rem; color:var(--muted)">
+      Os dados deste site são públicos e verificáveis. Compartilhe.
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>Este site é um projeto de divulgação de dados públicos sobre a estrutura econômica do Brasil.<br>
+  Os valores apresentados vêm de fontes oficiais e pesquisas acadêmicas referenciadas abaixo.</p>
+  <ul class="sources">
+    <li>Banco Central do Brasil — Balanço de Pagamentos 2024/2025. bcb.gov.br</li>
+    <li>ISTOÉ Dinheiro — "Remessa de lucros e dividendos soma US$ 45,571 bilhões em 2024". Jan/2025</li>
+    <li>Agência Brasil — "Contas externas têm saldo negativo de US$ 68,8 bilhões em 2025". Jan/2026</li>
+    <li>Brasil de Fato — "R$ 1 trilhão: Brasil se aproxima de gasto histórico com juros". Abr/2025</li>
+    <li>Poder360 — "Brasil gasta R$ 12,6 trilhões com juros da dívida em 24 anos". Mar/2025</li>
+    <li>Esquerda Diário — "Governo Lula pagou mais de R$ 891 bilhões em juros em 2025". 2026</li>
+    <li>FMI — Base de Dados das Finanças Públicas. imf.org</li>
+    <li>Tax Justice Network — "State of Tax Justice 2023". taxjustice.net</li>
+    <li>Agência Brasil — "Brasil perde R$ 40 bilhões por ano em paraísos fiscais". Ago/2023</li>
+    <li>Ladislau Dowbor — Instituto Humanitas Unisinos / ihu.unisinos.br</li>
+    <li>Tesouro Nacional — Relatório da Dívida Pública Federal. tesourotransparente.gov.br</li>
+  </ul>
+</footer>
+
+<script>
+  // SCROLL PROGRESS
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    const pct = (window.scrollY / total) * 100;
+    document.getElementById('scrollLine').style.width = pct + '%';
+  });
+
+  // REVEAL ON SCROLL
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => observer.observe(r));
+
+  // REAL-TIME COUNTER
+  // Dados anuais 2024:
+  // Juros dívida pública: R$ 950.4 bi → por segundo: 950.4e9 / (365*24*3600)
+  // Lucros/dividendos ao exterior: US$ 45.5bi * 5.7 (câmbio médio) = R$ 259 bi → por segundo
+  // Paraísos fiscais: R$ 40 bi → por segundo
+  const ratesPerSecond = {
+    juros: 950.4e9 / (365 * 24 * 3600),        // ~30,130 /s
+    lucros: 259e9 / (365 * 24 * 3600),           // ~8,207 /s
+    paraiso: 40e9 / (365 * 24 * 3600),           // ~1,268 /s
+  };
+  const totalRate = ratesPerSecond.juros + ratesPerSecond.lucros + ratesPerSecond.paraiso;
+  let startTime = Date.now();
+
+  function formatBRL(val) {
+    if (val >= 1e9) return 'R$ ' + (val/1e9).toFixed(2) + ' bi';
+    if (val >= 1e6) return 'R$ ' + (val/1e6).toFixed(1) + ' mi';
+    if (val >= 1e3) return 'R$ ' + Math.round(val/1e3) + ' mil';
+    return 'R$ ' + Math.round(val).toLocaleString('pt-BR');
+  }
+
+  function updateCounter() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    document.getElementById('mainCounter').textContent = formatBRL(totalRate * elapsed);
+    document.getElementById('c1').textContent = formatBRL(ratesPerSecond.juros * elapsed);
+    document.getElementById('c2').textContent = formatBRL(ratesPerSecond.lucros * elapsed);
+    document.getElementById('c3').textContent = formatBRL(ratesPerSecond.paraiso * elapsed);
+    requestAnimationFrame(updateCounter);
+  }
+  updateCounter();
+
+  // CHARTS
+  Chart.defaults.color = '#666';
+  Chart.defaults.borderColor = '#1e1e1e';
+  const chartFont = "'IBM Plex Mono', monospace";
+
+  // Chart 1: Lucros e dividendos histórico
+  new Chart(document.getElementById('chartLucros'), {
+    type: 'bar',
+    data: {
+      labels: ['2018','2019','2020','2021','2022','2023','2024'],
+      datasets: [{
+        label: 'US$ bilhões',
+        data: [24.1, 28.4, 18.2, 31.6, 40.2, 37.4, 45.5],
+        backgroundColor: (ctx) => {
+          const v = ctx.raw;
+          if(v === 45.5) return 'rgba(230,48,39,0.9)';
+          return 'rgba(230,48,39,0.35)';
+        },
+        borderColor: 'var(--red)',
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' US$ ' + c.raw + ' bilhões' } }
+      },
+      scales: {
+        x: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 } } },
+        y: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 }, callback: v => 'US$ ' + v + 'bi' } }
+      }
+    }
+  });
+
+  // Chart 2: Comparativo orçamentos
+  new Chart(document.getElementById('chartComparativo'), {
+    type: 'bar',
+    data: {
+      labels: ['Paraísos fiscais\n(perda anual)', 'Fundeb\n(orçamento)', 'Min. Saúde\n(orçamento)', 'Ciência e\nTecnologia'],
+      datasets: [{
+        label: 'R$ bilhões',
+        data: [40, 41, 192, 12],
+        backgroundColor: ['rgba(230,48,39,0.8)', 'rgba(245,166,35,0.4)', 'rgba(245,166,35,0.4)', 'rgba(245,166,35,0.4)'],
+        borderColor: ['var(--red)', 'var(--amber)', 'var(--amber)', 'var(--amber)'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 }, callback: v => 'R$ ' + v + 'bi' } },
+        y: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 } } }
+      }
+    }
+  });
+
+  // Chart 3: Exportações por tipo
+  new Chart(document.getElementById('chartExportacoes'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Commodities agrícolas', 'Minérios e metais', 'Petróleo e derivados', 'Industrializados', 'Outros'],
+      datasets: [{
+        data: [38, 16, 12, 26, 8],
+        backgroundColor: [
+          'rgba(0,166,81,0.7)',
+          'rgba(245,166,35,0.7)',
+          'rgba(0,156,244,0.5)',
+          'rgba(230,48,39,0.7)',
+          'rgba(100,100,100,0.5)'
+        ],
+        borderColor: '#0a0a0a',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { font: { family: chartFont, size: 11 }, padding: 16, color: '#999' }
+        },
+        tooltip: { callbacks: { label: c => ' ' + c.label + ': ' + c.raw + '%' } }
+      }
+    }
+  });
+
+  // Chart 4: Total por categoria
+  new Chart(document.getElementById('chartTotal'), {
+    type: 'bar',
+    data: {
+      labels: ['Juros da\ndívida pública', 'Remessa de\nlucros/dividendos', 'Juros externos\nda dívida', 'Paraísos\nfiscais (mín.)'],
+      datasets: [{
+        label: 'R$ bilhões (2024)',
+        data: [950, 259, 173, 40],
+        backgroundColor: [
+          'rgba(230,48,39,0.9)',
+          'rgba(230,48,39,0.65)',
+          'rgba(245,166,35,0.7)',
+          'rgba(245,166,35,0.5)'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' R$ ' + c.raw + ' bilhões' } }
+      },
+      scales: {
+        x: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 } } },
+        y: { grid: { color: '#1a1a1a' }, ticks: { font: { family: chartFont, size: 11 }, callback: v => 'R$ ' + v + 'bi' } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
